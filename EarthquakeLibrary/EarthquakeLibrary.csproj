@@ -50,14 +50,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Class1.cs" />
-    <Compile Include="EEW.cs" />
+    <Compile Include="EEW\EEW.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Information\Information.cs" />
-    <Compile Include="JmaIntensity.cs" />
-    <Compile Include="Kyoshin.cs" />
+    <Compile Include="Intensity.cs" />
     <Compile Include="Location.cs" />
-    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Tsunami.cs" />
   </ItemGroup>
