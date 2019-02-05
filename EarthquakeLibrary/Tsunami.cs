@@ -551,6 +551,26 @@ namespace EarthquakeLibrary.Tsunami
                 Height == res.Height &&
                 Rising == res.Rising;
         }
+
+        protected bool Equals(ObservationResult other)
+        {
+            return string.Equals(Area, other.Area) && string.Equals(Point, other.Point) && First.Equals(other.First) &&
+                   Max.Equals(other.Max) && Height.Equals(other.Height) && Rising == other.Rising;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (Area != null ? Area.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Point != null ? Point.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ First.GetHashCode();
+                hashCode = (hashCode * 397) ^ Max.GetHashCode();
+                hashCode = (hashCode * 397) ^ Height.GetHashCode();
+                hashCode = (hashCode * 397) ^ Rising.GetHashCode();
+                return hashCode;
+            }
+        }
     }
 
     public struct First

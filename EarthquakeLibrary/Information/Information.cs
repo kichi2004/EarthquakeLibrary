@@ -124,7 +124,7 @@ namespace EarthquakeLibrary.Information
                         RegexOptions.IgnoreCase | RegexOptions.Singleline).Match(source);
                 var match =
                     new Regex(
-                        "<td><a href=\"/weather/jp/earthquake(?<url>.*?)\">(?<time>.*?)</a></td>.*?<td>(?<time2>.*?)</td>.*?<td align=center>(?<area>.*?)</td>.*?<td align=center>(?<mag>.*?)</td>.*?<td align=center>(?<sind>.*?)</td>.*?</tr>",
+                        "<tr bgcolor=\"#ffffff\" valign=middle>.*?<td><a href=\"/weather/jp/earthquake(?<url>.*?)\">(?<time>.*?)</a></td>.*?<td align=center>(?<area>.*?)</td>.*?<td align=center>(?<mag>.*?)</td>.*?<td align=center>(?<sind>.*?)</td>.*?</tr>",
                         RegexOptions.IgnoreCase | RegexOptions.Singleline).Match(source).NextMatch();
                 #endregion
                 var lat = latlon_match.Groups[1].Value.Replace("度", "");
@@ -138,7 +138,7 @@ namespace EarthquakeLibrary.Information
                     if (!lat.Contains("北緯")) location.Longitude *= -1;
                 }
                 var rtn = new NewEarthquakeInformation(date_match.Groups[1].Value,
-                    "", region_match.Groups[1].Value,
+                    region_match.Groups[1].Value,
                     mag_match.Groups[1].Value, int_match.Groups[1].Value,
                     null, null, depth_match.Groups[1].Value, info_match.Groups[1].Value, detail_url_match.Groups[1].Value, region_url_match.Groups[1].Value) { 
                     Info_url = new Uri("https://typhoon.yahoo.co.jp/weather/earthquake/"),
@@ -147,7 +147,8 @@ namespace EarthquakeLibrary.Information
 
                 var oldinfo = new List<OldEarthquakeInformation>();
                 if (match.Success)
-                    for (var i = 0; i <= 8; i++) {
+                    for (var i = 1; i < 9; i++) {
+                        Console.WriteLine(match.Groups["time"].Value);
                         var info = new OldEarthquakeInformation {
                             Origin_time = DateTime.ParseExact(match.Groups["time"].Value, "yyyy年M月d日 H時m分ごろ",
                             DateTimeFormatInfo.InvariantInfo, DateTimeStyles.NoCurrentDateDefault)
@@ -165,7 +166,7 @@ namespace EarthquakeLibrary.Information
 
                         info.Info_url = new Uri("https://typhoon.yahoo.co.jp/weather/jp/earthquake" + match.Groups["url"].Value);
                         oldinfo.Add(info);
-                        if (i != 8)
+                        if (i != 9)
                             match = match.NextMatch();
                     }
                 rtn.Oldinfo = oldinfo.AsEnumerable();
@@ -277,7 +278,7 @@ namespace EarthquakeLibrary.Information
             }
 
             var rtn = new EarthquakeInformation(date_match.Groups[1].Value,
-                "", region_match.Groups[1].Value,
+                region_match.Groups[1].Value,
                 mag_match.Groups[1].Value, int_match.Groups[1].Value,
                 null, null, depth_match.Groups[1].Value, info_match.Groups[1].Value, detail_url_match.Groups[1].Value,
                 region_url_match.Groups[1].Value) {
@@ -329,9 +330,9 @@ namespace EarthquakeLibrary.Information
     {
         public NewEarthquakeInformation() { }
 
-        public NewEarthquakeInformation(string origin_time, string announced_time, string epicenter,
+        public NewEarthquakeInformation(string origin_time, string epicenter,
             string magnitude, string intensity, string Lat, string Lon, string depth, string message, string detailUrl, string regionUrl)
-            : base(origin_time, announced_time, epicenter,
+            : base(origin_time, epicenter,
             magnitude, intensity, Lat, Lon, depth, message, detailUrl, regionUrl)
         {
         }
@@ -346,7 +347,7 @@ namespace EarthquakeLibrary.Information
     {
         public EarthquakeInformation() { }
 
-        public EarthquakeInformation(string origin_time, string announced_time, string epicenter, string magnitude,
+        public EarthquakeInformation(string origin_time, string epicenter, string magnitude,
             string intensity, string lat, string lon,
             string depth, string message, string detailUrl, string regionUrl) {
             this.Origin_time = DateTime.ParseExact(origin_time, "yyyy年M月d日 H時m分ごろ", DateTimeFormatInfo.InvariantInfo,
@@ -527,7 +528,9 @@ namespace EarthquakeLibrary.Information
             public IEnumerable<string> Place { get; set; }
 
             public static bool operator ==(ShindoPlace a, ShindoPlace b)
-                => a.Prefecture == b.Prefecture && a.Place.SequenceEqual(b.Place);
+                => a is null
+                    ? b is null
+                    : !(b is null) && a.Prefecture == b.Prefecture && a.Place.SequenceEqual(b.Place);
             public static bool operator !=(ShindoPlace a, ShindoPlace b)
                 => !( a == b );
             public override bool Equals(object obj)
@@ -613,12 +616,11 @@ namespace EarthquakeLibrary.Information
         /// 過去の地震情報を発生時刻・発表時刻・震源地・マグニチュード・震度・URLで初期化します。
         /// </summary>
         /// <param name="origin_time">発生時刻</param>
-        /// <param name="announced_time">発表時刻</param>
         /// <param name="epicenter">震源地</param>
         /// <param name="magnitude">マグニチュード</param>
         /// <param name="intensity">震度</param>
         /// <param name="uri">URL</param>
-        public OldEarthquakeInformation(string origin_time, string announced_time, string epicenter, string magnitude, string intensity, string uri)
+        public OldEarthquakeInformation(string origin_time, string epicenter, string magnitude, string intensity, string uri)
         {
             this.Origin_time = DateTime.ParseExact(origin_time, "yyyy年M月d日 H時m分ごろ", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.NoCurrentDateDefault);
 
@@ -637,12 +639,6 @@ namespace EarthquakeLibrary.Information
         /// 発生時刻
         /// </summary>
         public DateTime Origin_time { get; set; }
-
-        /// <summary>
-        /// 情報発表時刻
-        /// </summary>
-        [Obsolete("廃止", true)]
-        public DateTime Announced_time { get; set; }
 
         /// <summary>
         /// 震源地

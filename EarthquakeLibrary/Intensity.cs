@@ -7,47 +7,47 @@ namespace EarthquakeLibrary
         /// <summary>
         /// 震度不明
         /// </summary>
-        internal static Intensity Unknown => new Intensity("不明", "震度不明", -1);
+        public static Intensity Unknown => new Intensity("不明", "震度不明", -1);
         /// <summary>
         /// 震度1未満
         /// </summary>
-        internal static Intensity Int0 => new Intensity("0", "震度0", 0);
+        public static Intensity Int0 => new Intensity("0", "震度0", 0);
         /// <summary>
         /// 震度1
         /// </summary>
-        internal static Intensity Int1 => new Intensity("1", "震度1", 1);
+        public static Intensity Int1 => new Intensity("1", "震度1", 1);
         /// <summary>
         /// 震度2
         /// </summary>
-        internal static Intensity Int2 => new Intensity("2", "震度2", 2);
+        public static Intensity Int2 => new Intensity("2", "震度2", 2);
         /// <summary>
         /// 震度3
         /// </summary>
-        internal static Intensity Int3 => new Intensity("3", "震度3", 3);
+        public static Intensity Int3 => new Intensity("3", "震度3", 3);
         /// <summary>
         /// 震度4
         /// </summary>
-        internal static Intensity Int4 => new Intensity("4", "震度4", 4);
+        public static Intensity Int4 => new Intensity("4", "震度4", 4);
         /// <summary>
         /// 震度5弱
         /// </summary>
-        internal static Intensity Int5Minus => new Intensity("5-", "震度5弱", 5);
+        public static Intensity Int5Minus => new Intensity("5-", "震度5弱", 5);
         /// <summary>
         /// 震度5強
         /// </summary>
-        internal static Intensity Int5Plus => new Intensity("5+", "震度5強", 6);
+        public static Intensity Int5Plus => new Intensity("5+", "震度5強", 6);
         /// <summary>
         /// 震度6弱
         /// </summary>
-        internal static Intensity Int6Minus => new Intensity("6-", "震度6弱", 7);
+        public static Intensity Int6Minus => new Intensity("6-", "震度6弱", 7);
         /// <summary>
         /// 震度6強
         /// </summary>
-        internal static Intensity Int6Plus => new Intensity("6+", "震度6強", 8);
+        public static Intensity Int6Plus => new Intensity("6+", "震度6強", 8);
         /// <summary>
         /// 震度7
         /// </summary>
-        internal static Intensity Int7 => new Intensity("7", "震度7", 9);
+        public static Intensity Int7 => new Intensity("7", "震度7", 9);
 
         private Intensity(string shorts, string longs, int ord)
         {
@@ -59,22 +59,22 @@ namespace EarthquakeLibrary
         /// <summary>
         /// 震度の順番(震度0:0、震度7:9)
         /// </summary>
-        internal int EnumOrder { get; }
+        public int EnumOrder { get; }
         /// <summary>
         /// 短い文字列
         /// </summary>
-        internal string ShortString { get; }
+        public string ShortString { get; }
         /// <summary>
         /// 長い文字列
         /// </summary>
-        internal string LongString { get; }
+        public string LongString { get; }
 
         /// <summary>
         /// 震度実測値を <seealso cref="Intensity"/> に変換します。
         /// </summary>
         /// <param name="value"></param>
         /// <returns></returns>
-        internal static Intensity FromValue(float value)
+        public static Intensity FromValue(float value)
         {
             if (value < 0.5) return Int0;
             if (value < 1.5) return Int1;
@@ -93,7 +93,7 @@ namespace EarthquakeLibrary
         /// <param name="s">文字列</param>
         /// <param name="intensity">震度</param>
         /// <returns>成功したかどうか</returns>
-        internal static bool TryParse(string s, out Intensity intensity)
+        public static bool TryParse(string s, out Intensity intensity)
         {
             switch (s) {
                 case "1":
@@ -151,9 +151,9 @@ namespace EarthquakeLibrary
         /// <param name="s">文字列</param>
         /// <exception cref="FormatException"/>
         /// <returns>変換された震度</returns>
-        internal static Intensity Parse(string s)
+        public static Intensity Parse(string s)
         {
-            switch (s) {
+            switch (s.Replace("震度", "")) {
                 case "1":
                 case "１":
                     return Int1;
@@ -224,6 +224,16 @@ namespace EarthquakeLibrary
         {
             if (intensity == null) throw new ArgumentNullException(nameof(intensity));
             return intensity.EnumOrder;
+        }
+
+        public static bool operator ==(Intensity intensity1, Intensity intensity2)
+        {
+            return intensity1?.EnumOrder == intensity2?.EnumOrder;
+        }
+
+        public static bool operator !=(Intensity intensity1, Intensity intensity2)
+        {
+            return intensity1?.EnumOrder != intensity2?.EnumOrder;
         }
 
         public bool Equals(Intensity other)
