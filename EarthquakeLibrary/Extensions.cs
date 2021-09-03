@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace EarthquakeLibrary.Extensions
 {
@@ -38,18 +35,13 @@ namespace EarthquakeLibrary.Extensions
         /// </summary>
         public static IEnumerable<T> GetDistinct<T>(this IList<T> self)
         {
-            var uniqueList = new List<T>();
+            var uniqueList = new HashSet<T>();
 
             foreach (var n in self)
             {
-                if (uniqueList.Contains(n))
-                {
+                if (!uniqueList.Add(n))
                     yield return n;
-                }
-                else
-                {
-                    uniqueList.Add(n);
-                }
+
             }
         }
     }

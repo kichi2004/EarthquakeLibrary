@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Net;
 using EarthquakeLibrary.Core;
 
 namespace EarthquakeLibrary.EEW
@@ -160,42 +158,13 @@ namespace EarthquakeLibrary.EEW
         /// 警報
         /// </summary>
         Warning = 1,
-        Emergency = 2,
         /// <summary>
         /// 特別警報
         /// </summary>
+        Emergency = 2,
+        /// <summary>
+        /// 特別警報（警報）
+        /// </summary>
         EmergencyWarning = Warning | Emergency
-    }
-
-    public class EewWatcher
-    {
-        /// <summary>
-        /// EEWWatcherを初期化します。
-        /// </summary>
-        /// <param name="interval">取得間隔（秒）</param>
-        public EewWatcher(ushort interval) : this()
-            => this._timer.Interval = interval * 1000;
-        /// <summary>
-        /// EEWWatcherを初期化します。
-        /// </summary>
-        public EewWatcher()
-        {
-            this._timer = new System.Timers.Timer() { Interval = 1000 };
-            this.SetTime();
-            this._timer.Elapsed += this.Timer_Elapsed;
-        }
-
-        private System.Timers.Timer _timer;
-        private int _c;
-        private DateTime _time;
-        private void Timer_Elapsed(object sender, EventArgs e)
-        {
-            if (this._c == (int)this._timer.Interval / 5 * 18) this.SetTime();
-
-            this._c++;
-        }
-        public void SetTime()
-            => this._time = DateTime.ParseExact(new WebClient().DownloadString("http://ntp-a1.nict.go.jp/cgi-bin/time"), "ddd MMM dd HH:mm:ss yyyy JST\n", DateTimeFormatInfo.InvariantInfo, DateTimeStyles.None);
-
     }
 }

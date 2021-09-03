@@ -1,8 +1,13 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace EarthquakeLibrary
 {
-    public class Intensity : IEquatable<Intensity>
+    /// <summary>
+    /// 震度を表すクラスです。
+    /// </summary>
+    [DebuggerDisplay("{" + nameof(LongString) + "}")]
+    public class Intensity : IEquatable<Intensity>, IComparable<Intensity>
     {
         /// <summary>
         /// 震度不明
@@ -49,10 +54,10 @@ namespace EarthquakeLibrary
         /// </summary>
         public static Intensity Int7 => new Intensity("7", "震度7", 9);
 
-        private Intensity(string shorts, string longs, int ord)
+        private Intensity(string shortString, string longs, int enumOrder)
         {
-            EnumOrder = ord;
-            ShortString = shorts;
+            EnumOrder = enumOrder;
+            ShortString = shortString;
             LongString = longs;
         }
 
@@ -95,7 +100,7 @@ namespace EarthquakeLibrary
         /// <returns>成功したかどうか</returns>
         public static bool TryParse(string s, out Intensity intensity)
         {
-            switch (s) {
+            switch (s?.Replace("震度", "")) {
                 case "1":
                 case "１":
                     intensity = Int1;
@@ -236,21 +241,43 @@ namespace EarthquakeLibrary
             return intensity1?.EnumOrder != intensity2?.EnumOrder;
         }
 
+        public static bool operator <(Intensity intensity1, Intensity intensity2) 
+            => intensity1?.EnumOrder < intensity2?.EnumOrder;
+
+        public static bool operator >(Intensity intensity1, Intensity intensity2)
+            => intensity1?.EnumOrder > intensity2?.EnumOrder;
+        public static bool operator <=(Intensity intensity1, Intensity intensity2)
+            => intensity1?.EnumOrder <= intensity2?.EnumOrder;
+
+        public static bool operator >=(Intensity intensity1, Intensity intensity2)
+            => intensity1?.EnumOrder >= intensity2?.EnumOrder;
+
+        /// <inheritdoc />
         public bool Equals(Intensity other)
         {
-            return other != null && this.EnumOrder == other.EnumOrder;
+            return other != null && EnumOrder == other.EnumOrder || ReferenceEquals(this, other);
         }
 
+        /// <inheritdoc />
         public override bool Equals(object obj)
         {
             if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
-            return obj.GetType() == this.GetType() && this.Equals((Intensity)obj);
+            return obj.GetType() == GetType() && Equals((Intensity)obj);
         }
 
+        /// <inheritdoc />
         public override int GetHashCode()
         {
-            return this.EnumOrder;
+            return EnumOrder;
+        }
+
+        /// <inheritdoc />
+        public int CompareTo(Intensity other)
+        {
+            if (ReferenceEquals(this, other)) return 0;
+            if (ReferenceEquals(null, other)) return 1;
+            return EnumOrder.CompareTo(other.EnumOrder);
         }
     }
 }

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+
 // ReSharper disable InconsistentNaming
 
 namespace EarthquakeLibrary.Tsunami
@@ -39,7 +39,8 @@ namespace EarthquakeLibrary.Tsunami
         /// <param name="uri">URL</param>
         /// <returns></returns>
         public static (IEnumerable<ForecastResult>, EpicenterInfo) GetForecastFromJma(Uri uri) {
-            var wc = new WebClient() {
+            var wc = new WebClient
+            {
                 Encoding = Encoding.UTF8
             };
             //URLからダウンロード（ソースを取得）
@@ -64,7 +65,7 @@ namespace EarthquakeLibrary.Tsunami
             //津波到達予想の場合の正規表現で検索
             var regex =
                 @"<tr bgcolor='#\w+'><td.*?>＃?(.*?)</td><td class='tsunamiTime'.*?>＃?" +
-                @"(.*?)</td><td class='tsunamiHeight'.*?>(&nbsp;)*＃?(&nbsp;)*(.*?)</td></tr>";
+                @"(.*?)</td><td.*?>(&nbsp;)*＃?(&nbsp;)*(.*?)</td></tr>";
             var matches = Regex.Matches(source, regex);
             //上記の正規表現でマッチしなかった場合(=到達予想ではない場合)
             if (matches.Count != 0) return (F(), epicenter);
@@ -108,7 +109,7 @@ namespace EarthquakeLibrary.Tsunami
         /// <summary>
         /// tenki.jp津波情報
         /// </summary>
-        public const string TenkiTsunami = "http://www.tenki.jp/bousai/tsunami/";
+        public const string TenkiTsunami = "https://earthquake.tenki.jp/bousai/tsunami/observation/";
 
         /// <summary>
         /// tenki.jpから津波観測情報を取得します。
@@ -118,44 +119,60 @@ namespace EarthquakeLibrary.Tsunami
         public static IEnumerable<ObservationResult> GetObservationFromTenkiJp(Uri uri)
         {
             string html;
-            using (var wc = new WebClient { Encoding = Encoding.UTF8 })
+            using (var wc = new WebClient {Encoding = Encoding.UTF8})
                 html = wc.DownloadString(uri);
-            var str =
-                new Regex("検潮所の観測情報(?<text>.*?)このページの先頭へ",
-                    RegexOptions.IgnoreCase | RegexOptions.Singleline)
-                .Match(html).Groups["text"].Value;
-            var matches = new Regex("<tr>\n    <td>(.*?)</td>\n    <td>(.*?)</td>\n    <td>(.*?)</td>\n    <td>(.*?)</td>\n    <td><span.*?>(.*?)</span></td>\n  </tr>",
-                    RegexOptions.IgnoreCase | RegexOptions.Singleline).Matches(str);
-            return Result();
-            IEnumerable<ObservationResult> Result()
+            var matches = new Regex(
+                @"<td class=""area-name"">(.+?)</td>\s+<td class=""point-name"">(.+?)</td>\s+<td class=""first-wave"">(.+?)</td>\s+<td class=""max-wave-time"">(.+?)</td>\s+ <td class=""max-wave-content"">(.+?)</td>",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline).Matches(html);
+            var ret = new List<ObservationResult>();
+            foreach (Match m in matches)
             {
-                foreach (Match m in matches) {
-                    var first = new First();
-                    if (m.Groups[3].Value.Contains("引き"))
-                        first.Type = FirstType.Pull;
-                    else if (m.Groups[3].Value.Contains("押し"))
-                        first.Type = FirstType.Push;
-                    else
-                        first.Type = FirstType.Unknown;
-                    if (first.Type != FirstType.Unknown) {
-                        DateTime.TryParseExact(m.Groups[3].Value.Split('(').First(), "M月d日 H時m分",
-                            null, DateTimeStyles.None, out var dt);
-                        first.Time = dt;
-                    } else first.Time = null;
-                    var obs = new ObservationResult() {
-                        Area = m.Groups[1].Value,
-                        Point = m.Groups[2].Value,
-                        First = first,
-                        Max = m.Groups[4].Value == "---" ? null :
-                        (DateTime?)DateTime.ParseExact(m.Groups[4].Value, "M月d日 H時m分", null) ,
-                        Rising = m.Groups[5].Value.Contains("上昇中")
-                    };
-                    if (m.Groups[5].Value == "微弱") obs.Height = 0;
-                    else if (m.Groups[5].Value == "観測中") obs.Height = null;
-                    else obs.Height = float.Parse(m.Groups[5].Value.Split('(').First().Replace("<br />", "").Replace("m", ""));
-                    yield return obs;
+                var first = new First();
+                if (m.Groups[3].Value.Contains("引き"))
+                    first.Type = FirstType.Pull;
+                else if (m.Groups[3].Value.Contains("押し"))
+                    first.Type = FirstType.Push;
+                else
+                    first.Type = FirstType.Unknown;
+                if (first.Type != FirstType.Unknown)
+                {
+                    DateTime.TryParseExact(m.Groups[3].Value.Split('(').First(), "M月d日 H時m分",
+                        null, DateTimeStyles.None, out var dt);
+                    first.Time = dt;
                 }
+                else first.Time = null;
+
+                var obs = new ObservationResult
+                {
+                    Area = m.Groups[1].Value,
+                    Point = m.Groups[2].Value,
+                    First = first,
+                    Max = m.Groups[4].Value == "---"
+                        ? null
+                        : (DateTime?) DateTime.ParseExact(m.Groups[4].Value, "M月d日 H時m分", null),
+                    Rising = m.Groups[5].Value.Contains("上昇中")
+                };
+                switch (m.Groups[5].Value.Trim())
+                {
+                    case "微弱":
+                        obs.Height = 0;
+                        break;
+                    case "観測中":
+                        obs.Height = null;
+                        break;
+                    default:
+                        var value = Regex.Match(
+                            m.Groups[5].Value.Replace("\n", ""),
+                            @"([0-9.]+?)m",
+                            RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                        obs.Height = float.Parse(value.Groups[1].Value);
+                        break;
+                }
+
+                ret.Add(obs);
             }
+
+            return ret;
         }
 
         /// <summary>
@@ -169,7 +186,6 @@ namespace EarthquakeLibrary.Tsunami
         /// <summary>
         /// tenki.jpから津波観測情報を取得します。
         /// </summary>
-        /// <param name="uri"></param>
         /// <returns></returns>
         public static IEnumerable<ObservationResult> GetObservationFromTenkiJp()
             => GetObservationFromTenkiJp(new Uri(TenkiTsunami));
@@ -205,7 +221,8 @@ namespace EarthquakeLibrary.Tsunami
                             null, DateTimeStyles.None, out var dt);
                         first.Time = dt;
                     } else first.Time = null;
-                    var obs = new ObservationResult() {
+                    var obs = new ObservationResult
+                    {
                         Point = m.Groups[1].Value.Split('(').First(),
                         First = first,
                         Max = m.Groups[3].Value == "---" ? null :
@@ -231,7 +248,6 @@ namespace EarthquakeLibrary.Tsunami
         /// <summary>
         /// tenki.jpから沖合観測情報を取得します。
         /// </summary>
-        /// <param name="uri"></param>
         /// <returns></returns>
         public static IEnumerable<ObservationResult> GetOffshoreFromTenkiJp()
             => GetOffshoreFromTenkiJp(new Uri(TenkiTsunami));
@@ -359,7 +375,26 @@ namespace EarthquakeLibrary.Tsunami
                 ForecastPlace == res.ForecastPlace &&
                 EstimatedArrivalTime == res.EstimatedArrivalTime &&
                 EstimatedHeight == res.EstimatedHeight;
+        }
 
+        protected bool Equals(ForecastResult other)
+        {
+            return Scale == other.Scale &&
+                   string.Equals(ForecastPlace, other.ForecastPlace) && 
+                   string.Equals(EstimatedArrivalTime, other.EstimatedArrivalTime) &&
+                   EstimatedHeight == other.EstimatedHeight;
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (int) Scale;
+                hashCode = (hashCode * 397) ^ (ForecastPlace != null ? ForecastPlace.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (EstimatedArrivalTime != null ? EstimatedArrivalTime.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (int) EstimatedHeight;
+                return hashCode;
+            }
         }
     }
 
@@ -437,22 +472,21 @@ namespace EarthquakeLibrary.Tsunami
         {
             if (str == "1m" || str == "１ｍ" || str == "0.5 m")
                 return ForecastHeights._1m;
-            else if (str == "3m" || str == "３ｍ" || str == "1 m" || str == "2 m")
+            if (str == "3m" || str == "３ｍ" || str == "1 m" || str == "2 m")
                 return ForecastHeights._3m;
-            else if (str == "5m" || str == "５ｍ" || str == "3 m" || str == "4 m")
+            if (str == "5m" || str == "５ｍ" || str == "3 m" || str == "4 m")
                 return ForecastHeights._5m;
-            else if (str == "10m" || str == "１０ｍ" || str == "6 m" || str == "8 m" || str == "10 m")
+            if (str == "10m" || str == "１０ｍ" || str == "6 m" || str == "8 m" || str == "10 m")
                 return ForecastHeights._10m;
-            else if (str == "10m超" || str == "１０ｍ超" || str == "10m以上" || str == "10m超" || str == "10 m以上")
+            if (str == "10m超" || str == "１０ｍ超" || str == "10m以上" || str == "10m超" || str == "10 m以上")
                 return ForecastHeights.Over10m;
-            else if (str == "高い")
+            if (str == "高い")
                 return ForecastHeights.High;
-            else if (str == "巨大")
+            if (str == "巨大")
                 return ForecastHeights.Huge;
-            else if (str == "")
+            if (str == "")
                 return ForecastHeights.Not_Notation;
-            else
-                return ForecastHeights.Unknown;
+            return ForecastHeights.Unknown;
         }
 
 
